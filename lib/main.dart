@@ -5,9 +5,9 @@ import 'package:casa_loop_engine/app.dart';
 import 'package:casa_loop_engine/bindings/app_binding.dart';
 import 'package:casa_loop_engine/helpers/diagnostics/diag.dart';
 
+// Commandes utiles :
 // flutter build apk --profile
-// Finally run : pod install --repo-update.
-// cd ios && flutter pub get && pod update && pod repo update
+// cd ios && flutter pub get && pod install --repo-update
 // dart run build_runner build --delete-conflicting-outputs
 Future<void> main() async {
   final boot = Diag.start('main');
