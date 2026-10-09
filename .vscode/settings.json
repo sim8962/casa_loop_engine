@@ -1,0 +1,139 @@
+//'dart' to '/opt/homebrew/bin/dart'
+//'flutter' to '/opt/homebrew/bin/flutter'
+//'flutter' to '/opt/homebrew/share/flutter
+
+{
+  "debug.openDebug": "openOnDebugBreak",
+
+  "editor.minimap.enabled": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+
+  "files.associations": {
+    "*.yaml": "yaml",
+    "pubspec.yaml": "yaml"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  "debug.internalConsoleOptions": "openOnSessionStart",
+  "dart.previewFlutterUiGuides": true,
+  "dart.devToolsTheme": "light",
+  "dart.previewFlutterUiGuidesCustomTracking": true,
+  "dart.lineLength": 110,
+  "[dart]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+
+    "editor.rulers": [110],
+
+    "editor.selectionHighlight": false,
+
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+
+    "editor.suggestSelection": "first",
+
+    "editor.tabCompletion": "onlySnippets",
+
+    "editor.wordBasedSuggestions": "off"
+  },
+
+  "workbench.colorCustomizations": {
+    "activityBar.border": "#ead72b",
+    "sideBar.border": "#ead72b",
+    "panel.border": "#ead72b",
+    "sideBarSectionHeader.border": "#ead72b",
+    "tab.activeBorder": "#ead72b",
+    "dropdown.border": "#ead72b",
+    "button.border": "#ead72b",
+    "input.border": "#ead72b",
+    "editorError.border": "#db321bdc",
+
+    "terminal.border": "#e1d34f",
+
+    "editorError.background": "#e10c0ca4",
+    "editor.wordWrap": "wordWrapColumn",
+
+    "editorInfo.foreground": "#f251af",
+
+    "editorHint.foreground": "#d900ff",
+    "debugConsole.warningForeground": "#ab9b04",
+    "debugConsole.errorForeground": "#e43710",
+    "debugConsole.sourceForeground": "#a09211",
+    "debugConsole.infoForeground": "#f1e365",
+
+    "activityBar.foreground": "#ead72b",
+    "activityBar.inactiveForeground": "#efe8ac",
+
+    "tab.activeForeground": "#f7e010",
+    "tab.activeModifiedBorder": "#ead72b",
+    "tab.inactiveForeground": "#999570",
+    "contrastBorder": "#ead72b",
+
+    "sideBarTitle.foreground": "#ead72b",
+    "sideBar.background": "#130505",
+    "sideBarSectionHeader.background": "#331148",
+
+    "terminal.tab.activeBorder": "#f0e57e",
+    "terminal.selectionForeground": "#d78533",
+
+    "editor.background": "#1d1f2a",
+    "minimap.background": "#0d0d0e",
+
+    "terminal.foreground": "#c6c2a0",
+    "terminal.background": "#0c0c0c",
+    "terminalCursor.background": "#f9f6f5",
+    "terminalCursor.foreground": "#ebe4e4",
+    "terminal.ansiBlack": "#090300",
+    "terminal.ansiBlue": "#01A0E4",
+    "terminal.ansiBrightBlack": "#f3ebe6",
+    "terminal.ansiBrightBlue": "#01A0E4",
+    "terminal.ansiBrightCyan": "#B5E4F4",
+    "terminal.ansiBrightGreen": "#01A252",
+    "terminal.ansiBrightMagenta": "#A16A94",
+    "terminal.ansiBrightRed": "#DB2D20",
+    "terminal.ansiBrightWhite": "#F7F7F7",
+    "terminal.ansiBrightYellow": "#FDED02",
+    "terminal.ansiCyan": "#B5E4F4",
+    "terminal.ansiGreen": "#01A252",
+    "terminal.ansiMagenta": "#A16A94",
+    "terminal.ansiRed": "#DB2D20",
+    "terminal.ansiWhite": "#A5A2A2",
+    "terminal.ansiYellow": "#FDED02"
+  },
+
+  "material-icon-theme.folders.associations": {
+    "global_state": "global",
+    "ui": "layout",
+    "bloc": "controller"
+  },
+
+  "editor.tokenColorCustomizations": {
+    "variables": "#ff9b54",
+    "functions": "#edafb8",
+    "keywords": "#4485b0"
+  },
+
+  "workbench.editor.enablePreview": false,
+  "editor.formatOnSave": true,
+
+  "git.enableSmartCommit": true,
+  "dart.flutterSdkPath": "/Users/macjam/develop/flutter",
+
+  "editor.fontFamily": "FiraCode,Operator Mono,'DejaVu Sans Mono for Powerline'",
+
+  "editor.fontLigatures": true,
+
+  "explorer.decorations.badges": false,
+  "editor.fontSize": 17,
+  "editor.lineHeight": 36,
+
+  "terminal.integrated.fontSize": 16,
+  "terminal.integrated.cursorStyleInactive": "line",
+
+  "terminal.integrated.defaultProfile.linux": "",
+  "terminal.integrated.fontFamily": "'Fira Code', monospace"
+}

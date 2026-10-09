@@ -1,0 +1,334 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:6668364918909868225",
+      "lastPropertyId": "8:7799395566189058527",
+      "name": "MarkerEntity",
+      "properties": [
+        {
+          "id": "1:3613279030973343118",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8440130361816922939",
+          "name": "markerId",
+          "indexId": "1:5434156141765571609",
+          "type": 9,
+          "flags": 34848
+        },
+        {
+          "id": "3:8935694469715651862",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "4:735829866724157654",
+          "name": "type",
+          "type": 9
+        },
+        {
+          "id": "5:3914613191154983635",
+          "name": "latitude",
+          "type": 8
+        },
+        {
+          "id": "6:7296222223406870003",
+          "name": "longitude",
+          "type": 8
+        },
+        {
+          "id": "7:8351614653193897880",
+          "name": "roadRef",
+          "type": 9
+        },
+        {
+          "id": "8:7799395566189058527",
+          "name": "orderIndex",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:7237818594452321947",
+      "lastPropertyId": "4:7700646868601958591",
+      "name": "RoutePreferenceEntity",
+      "properties": [
+        {
+          "id": "1:8785533090262208393",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1108892949625667094",
+          "name": "startMarkerId",
+          "indexId": "2:5899589612337393262",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "3:2553822769034849923",
+          "name": "endMarkerId",
+          "indexId": "3:1579050641013105269",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:7700646868601958591",
+          "name": "value",
+          "type": 8
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:8787787275157982284",
+      "lastPropertyId": "12:1050215820829585425",
+      "name": "RouteDraftEntity",
+      "properties": [
+        {
+          "id": "1:7110334746601981389",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5517754701992241721",
+          "name": "savedAtMillis",
+          "type": 6
+        },
+        {
+          "id": "3:5434712178334618242",
+          "name": "targetMode",
+          "type": 9
+        },
+        {
+          "id": "4:3069904888639524391",
+          "name": "targetDistanceKm",
+          "type": 8
+        },
+        {
+          "id": "5:4247415745003118333",
+          "name": "targetDurationHours",
+          "type": 8
+        },
+        {
+          "id": "6:7356231227254209274",
+          "name": "totalDistanceKm",
+          "type": 8
+        },
+        {
+          "id": "7:6878551958987816067",
+          "name": "totalDurationHours",
+          "type": 8
+        },
+        {
+          "id": "8:7927339558630596204",
+          "name": "averageSpeedKmh",
+          "type": 8
+        },
+        {
+          "id": "9:4958744122677488303",
+          "name": "markersJson",
+          "type": 9
+        },
+        {
+          "id": "10:5639394742013863375",
+          "name": "preferencesJson",
+          "type": 9
+        },
+        {
+          "id": "11:6694955036611460692",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "12:1050215820829585425",
+          "name": "createdAtMillis",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:1551225756059030340",
+      "lastPropertyId": "14:6208771496897219749",
+      "name": "PlaceEntity",
+      "properties": [
+        {
+          "id": "1:3817730930658522512",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8102968747418706686",
+          "name": "osmId",
+          "indexId": "4:8028538885496320295",
+          "type": 9,
+          "flags": 34848
+        },
+        {
+          "id": "3:4903556243348991013",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "4:530397310196314901",
+          "name": "nameFr",
+          "type": 9
+        },
+        {
+          "id": "5:3838520996944182766",
+          "name": "nameAr",
+          "type": 9
+        },
+        {
+          "id": "6:2553460364567279019",
+          "name": "nameZgh",
+          "type": 9
+        },
+        {
+          "id": "7:8821607695928219374",
+          "name": "alternativeNames",
+          "type": 9
+        },
+        {
+          "id": "8:8635407604021352130",
+          "name": "placeType",
+          "type": 9
+        },
+        {
+          "id": "9:7486075170939568843",
+          "name": "latitude",
+          "type": 8
+        },
+        {
+          "id": "10:4439586924271079327",
+          "name": "longitude",
+          "type": 8
+        },
+        {
+          "id": "11:2644393804799510650",
+          "name": "importance",
+          "type": 8
+        },
+        {
+          "id": "12:9122973665421336062",
+          "name": "population",
+          "type": 6
+        },
+        {
+          "id": "13:8914905896693234493",
+          "name": "searchKey",
+          "indexId": "5:3195403489453256041",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "14:6208771496897219749",
+          "name": "dataVersion",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "5:4115816964164516730",
+      "lastPropertyId": "13:5703770236927138354",
+      "name": "RoadEntity",
+      "properties": [
+        {
+          "id": "1:7786687980878585918",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7437408720131943650",
+          "name": "reference",
+          "indexId": "6:6468883758760250224",
+          "type": 9,
+          "flags": 34848
+        },
+        {
+          "id": "3:1306063716566326374",
+          "name": "normalizedReference",
+          "indexId": "7:6717381518456917501",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:6938246448342684634",
+          "name": "roadClass",
+          "type": 9
+        },
+        {
+          "id": "5:2861512424110484552",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "6:4071815137821711443",
+          "name": "nameFr",
+          "type": 9
+        },
+        {
+          "id": "7:8848910397687769266",
+          "name": "nameAr",
+          "type": 9
+        },
+        {
+          "id": "8:7434273650811471434",
+          "name": "nameZgh",
+          "type": 9
+        },
+        {
+          "id": "9:5304725363083545754",
+          "name": "alternativeNames",
+          "type": 9
+        },
+        {
+          "id": "10:2121525340739131057",
+          "name": "latitude",
+          "type": 8
+        },
+        {
+          "id": "11:1992680479527040463",
+          "name": "longitude",
+          "type": 8
+        },
+        {
+          "id": "12:4708901008272861444",
+          "name": "searchKey",
+          "indexId": "8:4758674203543166952",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "13:5703770236927138354",
+          "name": "dataVersion",
+          "type": 9
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "5:4115816964164516730",
+  "lastIndexId": "8:4758674203543166952",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}

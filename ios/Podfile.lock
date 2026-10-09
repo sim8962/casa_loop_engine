@@ -1,0 +1,39 @@
+PODS:
+  - Flutter (1.0.0)
+  - MapLibre (6.28.0)
+  - maplibre_gl (0.27.0):
+    - Flutter
+    - MapLibre (= 6.28.0)
+  - ObjectBox (5.3.0)
+  - objectbox_flutter_libs (0.0.1):
+    - Flutter
+    - ObjectBox (= 5.3.0)
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - maplibre_gl (from `.symlinks/plugins/maplibre_gl/ios`)
+  - objectbox_flutter_libs (from `.symlinks/plugins/objectbox_flutter_libs/ios`)
+
+SPEC REPOS:
+  trunk:
+    - MapLibre
+    - ObjectBox
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  maplibre_gl:
+    :path: ".symlinks/plugins/maplibre_gl/ios"
+  objectbox_flutter_libs:
+    :path: ".symlinks/plugins/objectbox_flutter_libs/ios"
+
+SPEC CHECKSUMS:
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
+  MapLibre: 502506f9abd57330f11c19328217be3b121c3f13
+  maplibre_gl: ad68f3f1213b4dd48a9961adc6607681eea7c456
+  ObjectBox: 2aae8ad350012cb53c6e7848064307cf68617f73
+  objectbox_flutter_libs: 42b57158b8c4869b731487f220e07d6edc6616e0
+
+PODFILE CHECKSUM: ce2bd07e48ac0db9731a3eaa78d3ebaf7cbf8d25
+
+COCOAPODS: 1.17.0
