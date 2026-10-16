@@ -1,5 +1,6 @@
 import 'package:casa_loop_engine/models/map_marker_item.dart';
 import 'package:casa_loop_engine/models/route_draft_segment_preference.dart';
+import 'package:casa_loop_engine/models/saved_route_snapshot.dart';
 
 /// Snapshot d'un trajet en cours, prêt à être persisté dans ObjectBox.
 class RouteDraft {
@@ -11,11 +12,9 @@ class RouteDraft {
     required this.targetMode,
     this.targetDistanceKm,
     this.targetDurationHours,
-    required this.totalDistanceKm,
-    required this.totalDurationHours,
-    required this.averageSpeedKmh,
     required this.markers,
     required this.preferences,
+    this.computedResult,
   });
 
   /// Identifiant unique du trajet sauvegardé ; `null` tant qu'il n'a jamais
@@ -39,9 +38,15 @@ class RouteDraft {
 
   final double? targetDistanceKm;
   final double? targetDurationHours;
-  final double totalDistanceKm;
-  final double totalDurationHours;
-  final double averageSpeedKmh;
   final List<MapMarkerItem> markers;
   final List<RouteDraftSegmentPreference> preferences;
+
+  /// Résultat moteur enregistré avec le trajet (boucle complète, retour
+  /// inclus), ou `null` lorsque les réglages sauvegardés n'ont pas de
+  /// tracé valide — état explicite « tracé à recalculer » : anciens
+  /// trajets sans géométrie, ou géométrie devenue incohérente après
+  /// modification des repères ou des préférences. Jamais restauré si
+  /// son contenu ne correspond pas aux repères et préférences du
+  /// trajet.
+  final SavedRouteSnapshot? computedResult;
 }

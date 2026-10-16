@@ -21,7 +21,7 @@ class MapSearchButton extends StatelessWidget {
                 onPressed!();
               },
         icon: const Icon(Icons.search),
-        label: const Text('Recherche'),
+        label: SizedBox.shrink(), //const Text('Recherche'),
       ),
       params: 'enabled=${onPressed != null}',
     );

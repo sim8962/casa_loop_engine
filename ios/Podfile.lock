@@ -8,11 +8,14 @@ PODS:
   - objectbox_flutter_libs (0.0.1):
     - Flutter
     - ObjectBox (= 5.3.0)
+  - share_plus (0.0.1):
+    - Flutter
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - maplibre_gl (from `.symlinks/plugins/maplibre_gl/ios`)
   - objectbox_flutter_libs (from `.symlinks/plugins/objectbox_flutter_libs/ios`)
+  - share_plus (from `.symlinks/plugins/share_plus/ios`)
 
 SPEC REPOS:
   trunk:
@@ -26,6 +29,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/maplibre_gl/ios"
   objectbox_flutter_libs:
     :path: ".symlinks/plugins/objectbox_flutter_libs/ios"
+  share_plus:
+    :path: ".symlinks/plugins/share_plus/ios"
 
 SPEC CHECKSUMS:
   Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
@@ -33,6 +38,7 @@ SPEC CHECKSUMS:
   maplibre_gl: ad68f3f1213b4dd48a9961adc6607681eea7c456
   ObjectBox: 2aae8ad350012cb53c6e7848064307cf68617f73
   objectbox_flutter_libs: 42b57158b8c4869b731487f220e07d6edc6616e0
+  share_plus: eccd7beb7cea61271aeed1800e8ccb2b952c0c7f
 
 PODFILE CHECKSUM: ce2bd07e48ac0db9731a3eaa78d3ebaf7cbf8d25
 

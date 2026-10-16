@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import 'package:casa_loop_engine/controllers/route_editor_controller.dart';
@@ -50,54 +51,83 @@ class _TargetLoopFieldsState extends State<TargetLoopFields> {
   Widget build(BuildContext context) {
     return Diag.sync('TargetLoopFields.build', () {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 0),
         child: Obx(() {
           final theme = Theme.of(context);
           final isDistance = _controller.loopTargetMode.value == LoopTargetMode.distance;
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: ToggleButtons(
-                  isSelected: [isDistance, !isDistance],
-                  onPressed: _controller.mutationsBlocked ? null : (index) {
+          // Une valeur saisie mais invalide (≤ 0 ou non finie) est
+          // refusée par le modèle et signalée ici plutôt qu'ignorée.
+          final rawValue = isDistance
+              ? _controller.targetDistanceKm.value
+              : _controller.targetDurationHours.value;
+          final hasInvalidTarget = rawValue != null && !(rawValue.isFinite && rawValue > 0);
+          final toggles = ToggleButtons(
+            isSelected: [isDistance, !isDistance],
+            onPressed: _controller.mutationsBlocked
+                ? null
+                : (index) {
                     Diag.event('Ui.tap', 'target=loopTargetMode index=$index');
                     _controller.setLoopTargetMode(
                       index == 0 ? LoopTargetMode.distance : LoopTargetMode.duration,
                     );
                   },
-                  color: theme.colorScheme.onSurface,
-                  selectedColor: theme.colorScheme.onPrimary,
-                  fillColor: theme.colorScheme.primary,
-                  selectedBorderColor: theme.colorScheme.primary,
-                  borderColor: theme.colorScheme.primary,
-                  borderRadius: BorderRadius.circular(8),
-                  constraints: const BoxConstraints(minWidth: 85, minHeight: 40),
-                  children: const [Text('Distance'), Text('Durée')],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: isDistance ? _distanceController : _durationController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    suffixText: isDistance ? 'km' : 'h',
-                    isDense: true,
-                    border: const OutlineInputBorder(),
-                  ),
-                  enabled: !_controller.mutationsBlocked,
-                  onChanged: (text) {
-                    final value = double.tryParse(text.replaceAll(',', '.'));
-                    if (isDistance) {
-                      _controller.setTargetDistanceKm(value);
-                    } else {
-                      _controller.setTargetDurationHours(value);
-                    }
-                  },
-                ),
-              ),
-            ],
+            color: theme.colorScheme.onSurface,
+            selectedColor: theme.colorScheme.onPrimary,
+            fillColor: theme.colorScheme.primary,
+            selectedBorderColor: theme.colorScheme.primary,
+            borderColor: theme.colorScheme.primary,
+            borderRadius: BorderRadius.circular(8.r),
+            // minHeight non convertie : plancher de zone tactile réel,
+            // déjà volontairement compact — une conversion .h la
+            // réduirait sur les écrans de hauteur < 844.
+            constraints: BoxConstraints(minWidth: 85.w, minHeight: 40),
+            children: const [Text('Distance'), Text('Durée')],
+          );
+          final field = TextField(
+            controller: isDistance ? _distanceController : _durationController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              suffixText: isDistance ? 'km' : 'h',
+              isDense: true,
+              border: const OutlineInputBorder(),
+              errorText: hasInvalidTarget ? 'Cible invalide : valeur > 0 requise' : null,
+            ),
+            enabled: !_controller.mutationsBlocked,
+            onChanged: (text) {
+              final value = double.tryParse(text.replaceAll(',', '.'));
+              if (isDistance) {
+                _controller.setTargetDistanceKm(value);
+              } else {
+                _controller.setTargetDurationHours(value);
+              }
+            },
+          );
+          // Disposition selon la largeur disponible : les deux contrôles
+          // côte à côte demandent ~390 pt avec le texte agrandi ; sous
+          // ce seuil (largeurs de téléphone) ils s'empilent plutôt que
+          // de déborder — les zones tactiles ne sont pas réduites.
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 440) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    toggles,
+                    SizedBox(height: 8.h),
+                    field,
+                  ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(child: toggles),
+                  SizedBox(width: 12.w),
+                  Expanded(child: field),
+                ],
+              );
+            },
           );
         }),
       );

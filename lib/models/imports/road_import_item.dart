@@ -18,7 +18,6 @@ class RoadImportItem {
     this.alternativeNames,
     required this.latitude,
     required this.longitude,
-    this.dataVersion,
   });
 
   factory RoadImportItem.fromJson(Map<String, dynamic> json) => Diag.frequentSync(
@@ -49,7 +48,6 @@ class RoadImportItem {
         alternativeNames: alternativeRaw?.map((value) => value.toString()).toList(),
         latitude: (latRaw as num).toDouble(),
         longitude: (lonRaw as num).toDouble(),
-        dataVersion: json['dataVersion']?.toString(),
       );
     },
     params: 'fields=${json.keys.length}',
@@ -66,9 +64,8 @@ class RoadImportItem {
   final List<String>? alternativeNames;
   final double latitude;
   final double longitude;
-  final String? dataVersion;
 
-  RoadEntity toEntity() => Diag.frequentSync(
+  RoadEntity toEntity({required String dataVersion}) => Diag.frequentSync(
     'RoadImportItem.toEntity',
     () => RoadEntity(
       reference: reference,

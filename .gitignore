@@ -57,3 +57,9 @@ dev_data/
 *.partial
 *.tmp
 *.temp
+
+# Pack régional Valhalla — artefacts lourds reproductibles via
+# tool/routing_regional/scripts/build_pack.sh ; scripts, gabarit, manifeste
+# et résultats légers restent versionnés.
+/tool/routing_regional/graph/routing_regional.tar
+/tool/routing_regional/graph/tiles/

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import 'package:casa_loop_engine/views/selected_markers/controllers/selected_markers_controller.dart';
@@ -43,7 +44,7 @@ class _RouteNameFieldState extends State<RouteNameField> {
   Widget build(BuildContext context) {
     return Diag.sync('RouteNameField.build', () {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 0),
         child: Obx(() {
           return TextField(
             key: const Key('route-name-field'),

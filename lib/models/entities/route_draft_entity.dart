@@ -19,6 +19,7 @@ class RouteDraftEntity {
     required this.averageSpeedKmh,
     required this.markersJson,
     required this.preferencesJson,
+    this.snapshotJson,
   });
 
   @Id()
@@ -45,4 +46,10 @@ class RouteDraftEntity {
 
   /// Liste des préférences de route encodée en JSON.
   String preferencesJson;
+
+  /// Résultat moteur enregistré avec le trajet, sérialisé par
+  /// `RouteSnapshotCodec` ; `null` pour un trajet sans tracé valide
+  /// (« à recalculer » — notamment tous les trajets écrits avant
+  /// l'ajout de ce champ, qui restent chargeables).
+  String? snapshotJson;
 }

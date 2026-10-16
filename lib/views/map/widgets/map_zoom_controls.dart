@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:casa_loop_engine/helpers/diagnostics/diag.dart';
 
@@ -27,7 +28,7 @@ class MapZoomControls extends StatelessWidget {
                   },
             child: const Icon(Icons.add),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           FloatingActionButton.small(
             key: const Key('map-zoom-out'),
             heroTag: 'map-zoom-out',

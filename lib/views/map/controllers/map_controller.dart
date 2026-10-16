@@ -10,23 +10,17 @@ import 'package:casa_loop_engine/models/computed_route.dart';
 import 'package:casa_loop_engine/models/local_map_pack.dart';
 import 'package:casa_loop_engine/models/map_marker_item.dart';
 import 'package:casa_loop_engine/services/map/offline_map_service.dart';
+import 'package:casa_loop_engine/services/repositories/place_repository.dart';
 import 'package:casa_loop_engine/helpers/geo/map_camera.dart';
 import 'package:casa_loop_engine/helpers/diagnostics/diag.dart';
 
 /// Position écran (pixels, origine en haut à gauche de la carte) du badge
 /// numéroté d'un repère validé. Recalculée à chaque déplacement de caméra
 /// ou resynchronisation des cercles ; [number] correspond à la position
-/// courante dans la liste validée (index + 1), jamais à l'identité du
-/// repère ([markerId]), qui ne change jamais.
+/// courante dans la liste validée (index + 1).
 class MapMarkerNumberLabel {
-  const MapMarkerNumberLabel({
-    required this.markerId,
-    required this.number,
-    required this.dx,
-    required this.dy,
-  });
+  const MapMarkerNumberLabel({required this.number, required this.dx, required this.dy});
 
-  final String markerId;
   final int number;
   final double dx;
   final double dy;
@@ -84,10 +78,37 @@ class MapController extends GetxController {
   bool _isUpdatingPendingMarker = false;
   final Map<String, Circle> _validatedCircles = {};
 
-  /// Ligne native du dernier tracé calculé, dans la couleur choisie pour le
-  /// segment ; `null` si aucun n'est dessiné.
-  Line? _routeLine;
-  bool _routeLineSyncing = false;
+  /// Lignes natives du dernier tracé calculé : une par segment, chacune
+  /// dans la couleur choisie pour son couple dirigé ; vide si aucun n'est
+  /// dessiné.
+  final List<Line> _routeLines = [];
+
+  /// Itinéraire effectivement représenté par [_routeLines] à l'instant
+  /// présent ; `null` tant qu'aucun dessin complet n'a abouti pour
+  /// l'itinéraire courant. Référence (identité, pas valeur) servant à
+  /// détecter qu'un dessin ou une recoloration sont devenus périmés
+  /// (résultat remplacé, carte fermée, style déchargé) en cours
+  /// d'exécution, pour abandonner sans jamais toucher aux lignes d'un
+  /// nouveau résultat.
+  ComputedItinerary? _drawnItinerary;
+
+  /// File sérialisant tout accès aux lignes de tracé : un dessin complet
+  /// ([syncRouteLine]) et une recoloration ([_updateRouteLineColor]) ne
+  /// s'exécutent jamais en parallèle. Chaque opération relit l'état
+  /// courant au moment où elle s'exécute réellement — jamais celui
+  /// capturé au moment de la demande — et revérifie la validité (résultat,
+  /// carte, style) après chaque attente native.
+  Future<void> _lineQueue = Future<void>.value();
+
+  /// Génération du style chargé, incrémentée à chaque [onStyleLoaded] :
+  /// [styleLoaded] reste `true` à travers un rechargement, elle ne permet
+  /// donc pas à une opération en vol de détecter que le style — et les
+  /// annotations qu'il portait — ont été remplacés pendant une attente
+  /// native. Chaque opération sur les lignes capture la génération à son
+  /// démarrage et la revérifie après chaque attente ; un écart signifie
+  /// que les lignes natives déjà posées ne valent plus rien (détruites
+  /// par le rechargement) et que l'opération doit s'abandonner.
+  int _lineStyleGeneration = 0;
 
   /// `true` pendant un recalcul des positions écran de
   /// [markerNumberLabels] : une nouvelle demande reçue pendant ce calcul
@@ -238,12 +259,7 @@ class MapController extends GetxController {
         if (isClosed) return;
         markerNumberLabels.assignAll([
           for (var i = 0; i < markers.length && i < points.length; i++)
-            MapMarkerNumberLabel(
-              markerId: markers[i].id,
-              number: i + 1,
-              dx: points[i].x.toDouble(),
-              dy: points[i].y.toDouble(),
-            ),
+            MapMarkerNumberLabel(number: i + 1, dx: points[i].x.toDouble(), dy: points[i].y.toDouble()),
         ]);
       } while (_labelsDirty);
     } finally {
@@ -366,9 +382,12 @@ class MapController extends GetxController {
       );
     }
     // Les annotations natives sont perdues à chaque (re)chargement de style :
-    // la référence de la ligne est invalidée avant redessin.
-    _routeLine = null;
-    if (_editor.tracedSegment.value != null) {
+    // les références des lignes sont invalidées avant redessin et la
+    // génération avance pour avorter toute opération en vol.
+    _lineStyleGeneration++;
+    _routeLines.clear();
+    _drawnItinerary = null;
+    if (_editor.tracedItinerary.value != null) {
       unawaited(
         syncRouteLine().catchError((Object error) {
           _editor.workingStateError.value = "Affichage du tracé impossible : $error";
@@ -497,74 +516,182 @@ class MapController extends GetxController {
     }, result: (_) => outcome);
   }
 
-  /// Dessine ou retire la géométrie du dernier tracé calculé par
-  /// [RouteEditorController] et cadre la caméra dessus. Sans effet visible
-  /// quand la carte ou le style ne sont pas prêts : le redessin est alors
-  /// reporté au prochain `onStyleLoaded`. Sérialisée contre elle-même pour
-  /// éviter les redessins imbriqués.
+  /// Dessine ou retire les géométries du dernier tracé calculé par
+  /// [RouteEditorController], puis cadre la caméra dessus une seule fois —
+  /// uniquement si le dessin a abouti sans devenir périmé en cours de
+  /// route. Sans effet visible quand la carte ou le style ne sont pas
+  /// prêts : le redessin est alors reporté au prochain `onStyleLoaded`.
+  /// Sérialisée avec [_updateRouteLineColor] via [_enqueueLineOperation] :
+  /// chaque opération relit l'état courant au moment où elle s'exécute
+  /// réellement, jamais celui capturé au moment de la demande — plusieurs
+  /// demandes empilées convergent donc naturellement vers le dernier état.
   ///
-  /// Dessine une seule ligne native [_routeLine] dans la couleur choisie
-  /// pour le segment tracé (position 0 → 1, seul segment calculé).
-  Future<void> syncRouteLine() => Diag.future('MapController.syncRouteLine', () async {
-    if (_routeLineSyncing) return;
-    final controller = _map;
-    if (controller == null || !styleLoaded.value) {
-      _routeLine = null;
-      return;
-    }
-    _routeLineSyncing = true;
-    try {
-      final existingLine = _routeLine;
-      if (existingLine != null) {
-        try {
-          await controller.removeLine(existingLine);
-        } catch (removeError) {
-          Diag.error('MapController.removeRouteLine', removeError);
-        }
-        _routeLine = null;
+  /// Dessine une ligne native par segment, dans la couleur choisie pour son
+  /// couple dirigé, sans contour ni raccord droit entre les géométries.
+  Future<void> syncRouteLine() => Diag.future(
+    'MapController.syncRouteLine',
+    () => _enqueueLineOperation(() async {
+      final controller = _map;
+      if (controller == null || !styleLoaded.value) {
+        _routeLines.clear();
+        _drawnItinerary = null;
+        return;
       }
-      final route = _editor.tracedSegment.value;
-      if (route == null || isClosed) return;
-      final geometry = [for (final p in route.geometry) LatLng(p.latitude, p.longitude)];
-      _routeLine = await controller.addLine(
-        LineOptions(
-          geometry: geometry,
-          lineColor: _editor.colorForSegment(0),
-          lineWidth: 4,
-          lineOpacity: 1,
-          lineJoin: 'round',
+      final itinerary = _editor.tracedItinerary.value;
+      if (identical(_drawnItinerary, itinerary) && _routeLines.length == (itinerary?.segments.length ?? 0)) {
+        // Déjà à jour : demande redondante (plusieurs révisions empilées
+        // pour le même résultat).
+        return;
+      }
+      final drawn = await _drawLines(controller, itinerary);
+      // Le cadrage reste une étape distincte du dessin, déclenchée
+      // seulement par un dessin complet et réussi — jamais par une
+      // recoloration ([_updateRouteLineColor] ne l'appelle jamais).
+      if (drawn && itinerary != null) {
+        await _frameItinerary(controller, itinerary);
+      }
+    }),
+    result: (_) => 'lines=${_routeLines.length}',
+  );
+
+  /// Dessine [itinerary] (ou retire les lignes existantes si `null`), sans
+  /// jamais cadrer la caméra. Retourne `true` si le dessin complet a pu
+  /// être posé sans que le résultat, la carte ou le style ne changent en
+  /// cours de route ; `false` sinon — les lignes déjà posées pour cette
+  /// tentative sont alors retirées, mais aucune ligne du nouveau résultat
+  /// n'est touchée (l'opération suivante en file, déjà en attente, s'en
+  /// charge avec l'état à jour).
+  Future<bool> _drawLines(MapLibreMapController controller, ComputedItinerary? itinerary) async {
+    final styleGeneration = _lineStyleGeneration;
+    await _removeRouteLines(controller);
+    _drawnItinerary = null;
+    if (itinerary == null) return true;
+    for (final segment in itinerary.segments) {
+      if (_isLineRenderStale(controller, itinerary, styleGeneration)) {
+        await _removeRouteLines(controller);
+        return false;
+      }
+      final geometry = [for (final p in segment.route.geometry) LatLng(p.latitude, p.longitude)];
+      _routeLines.add(
+        await controller.addLine(
+          LineOptions(
+            geometry: geometry,
+            lineColor: _editor.colorForPair(segment.identity.startMarkerId, segment.identity.endMarkerId),
+            lineWidth: 4,
+            lineOpacity: 1,
+            lineJoin: 'round',
+          ),
         ),
       );
-      await _frameRoute(route);
-    } finally {
-      _routeLineSyncing = false;
     }
-  }, result: (_) => 'line=${_routeLine != null}');
+    if (_isLineRenderStale(controller, itinerary, styleGeneration)) {
+      await _removeRouteLines(controller);
+      return false;
+    }
+    _drawnItinerary = itinerary;
+    return true;
+  }
 
-  /// Recolore la ligne déjà affichée sans toucher à sa géométrie, sans
-  /// rappeler le moteur et sans recadrer la caméra : réaction à
-  /// [RouteEditorController.routeColorRevision] uniquement (changement de
-  /// couleur de l'utilisateur), jamais à un nouveau calcul.
-  Future<void> _updateRouteLineColor() => Diag.future('MapController._updateRouteLineColor', () async {
-    final controller = _map;
-    final line = _routeLine;
-    if (controller == null || line == null) return;
-    await controller.updateLine(line, LineOptions(lineColor: _editor.colorForSegment(0)));
-  }, result: (_) => 'updated=${_routeLine != null}');
+  /// `true` si une opération en cours sur les lignes de tracé, démarrée
+  /// pour [controller], [itinerary] et la génération de style
+  /// [styleGeneration] capturée à son démarrage, n'est plus valide :
+  /// contrôleur fermé, carte remplacée (nouveau contrôleur natif), style
+  /// déchargé ou rechargé (la génération a avancé, les annotations
+  /// natives déjà posées sont perdues), ou résultat de l'éditeur changé
+  /// depuis le début de l'opération (comparaison par identité, pas par
+  /// valeur). Vérifiée après chaque attente native.
+  bool _isLineRenderStale(
+    MapLibreMapController controller,
+    ComputedItinerary itinerary,
+    int styleGeneration,
+  ) =>
+      isClosed ||
+      !identical(_map, controller) ||
+      !styleLoaded.value ||
+      styleGeneration != _lineStyleGeneration ||
+      !identical(_editor.tracedItinerary.value, itinerary);
 
-  /// Cadre la caméra sur l'emprise de la géométrie calculée.
-  Future<void> _frameRoute(ComputedRoute route) async {
-    final controller = _map;
-    if (controller == null) return;
-    var minLat = route.geometry.first.latitude;
+  /// Retire toutes les lignes de tracé affichées ; une ligne dont la
+  /// suppression échoue (annotation déjà perdue par un rechargement de
+  /// style) est simplement oubliée de la liste.
+  Future<void> _removeRouteLines(MapLibreMapController controller) async {
+    final lines = List<Line>.of(_routeLines);
+    _routeLines.clear();
+    for (final line in lines) {
+      try {
+        await controller.removeLine(line);
+      } catch (removeError) {
+        Diag.error('MapController.removeRouteLine', removeError);
+      }
+    }
+  }
+
+  /// Recolore les lignes déjà dessinées pour l'itinéraire courant, sans
+  /// toucher aux géométries et **sans jamais cadrer la caméra** : réaction
+  /// à [RouteEditorController.routeColorRevision] uniquement (changement
+  /// de couleur de l'utilisateur), jamais à un nouveau calcul. Sérialisée
+  /// avec [syncRouteLine] via [_enqueueLineOperation].
+  ///
+  /// Si l'itinéraire dessiné ([_drawnItinerary]) ne correspond pas (encore)
+  /// à celui en cours — dessin pas encore terminé ou déjà remplacé —,
+  /// l'opération est silencieusement abandonnée sans toucher à aucune
+  /// ligne : le prochain dessin complet appliquera de toute façon les
+  /// couleurs à jour via [RouteEditorController.colorForPair]. La validité
+  /// est revérifiée après chaque attente native pour abandonner sans
+  /// toucher aux lignes d'un nouveau résultat si celui-ci est remplacé en
+  /// cours de boucle.
+  Future<void> _updateRouteLineColor() => Diag.future(
+    'MapController._updateRouteLineColor',
+    () => _enqueueLineOperation(() async {
+      final controller = _map;
+      final itinerary = _editor.tracedItinerary.value;
+      if (controller == null || itinerary == null || !styleLoaded.value) return;
+      if (!identical(_drawnItinerary, itinerary) || _routeLines.length != itinerary.segments.length) {
+        return;
+      }
+      final styleGeneration = _lineStyleGeneration;
+      final lines = List<Line>.of(_routeLines);
+      for (var i = 0; i < lines.length; i++) {
+        if (_isLineRenderStale(controller, itinerary, styleGeneration)) return;
+        final identity = itinerary.segments[i].identity;
+        await controller.updateLine(
+          lines[i],
+          LineOptions(lineColor: _editor.colorForPair(identity.startMarkerId, identity.endMarkerId)),
+        );
+      }
+    }),
+    result: (_) => 'lines=${_routeLines.length}',
+  );
+
+  /// Sérialise tout accès aux lignes de tracé : [syncRouteLine] et
+  /// [_updateRouteLineColor] s'enchaînent dans l'ordre de leur appel, sans
+  /// jamais s'exécuter en parallèle. Une opération en échec ne bloque pas
+  /// les suivantes : l'erreur reste portée par le [Future] retourné à
+  /// l'appelant, mais la file continue.
+  Future<void> _enqueueLineOperation(Future<void> Function() operation) {
+    final result = _lineQueue.then((_) => operation());
+    _lineQueue = result.catchError((Object error, StackTrace stack) {
+      Diag.error('MapController.lineOperation', error, stack);
+    });
+    return result;
+  }
+
+  /// Cadre la caméra sur l'emprise de toutes les géométries calculées.
+  /// Jamais appelée par [_updateRouteLineColor] : une recoloration seule ne
+  /// recadre jamais la caméra.
+  Future<void> _frameItinerary(MapLibreMapController controller, ComputedItinerary itinerary) async {
+    if (itinerary.segments.isEmpty) return;
+    var minLat = itinerary.segments.first.route.geometry.first.latitude;
     var maxLat = minLat;
-    var minLon = route.geometry.first.longitude;
+    var minLon = itinerary.segments.first.route.geometry.first.longitude;
     var maxLon = minLon;
-    for (final point in route.geometry) {
-      minLat = math.min(minLat, point.latitude);
-      maxLat = math.max(maxLat, point.latitude);
-      minLon = math.min(minLon, point.longitude);
-      maxLon = math.max(maxLon, point.longitude);
+    for (final segment in itinerary.segments) {
+      for (final point in segment.route.geometry) {
+        minLat = math.min(minLat, point.latitude);
+        maxLat = math.max(maxLat, point.latitude);
+        minLon = math.min(minLon, point.longitude);
+        maxLon = math.max(maxLon, point.longitude);
+      }
     }
     // Marge verticale plus grande en bas : le résumé du tracé y est affiché.
     await controller.animateCamera(
@@ -606,20 +733,58 @@ class MapController extends GetxController {
     }
     _pendingCircle = null;
     pendingMarker.value = null;
+    _pendingNameAuto = false;
   }, result: (_) => 'removedCircle=${_map != null}');
+
+  /// `true` tant que le nom du repère temporaire vient d'une suggestion
+  /// (ou du générique) et n'a pas été saisi : un glisser-déposer peut
+  /// alors mettre à jour la suggestion ; un nom tapé reste intact.
+  bool _pendingNameAuto = false;
+
+  /// Nom du lieu répertorié le plus proche (ville, village, lieu-dit) —
+  /// `null` si le référentiel est absent ou sans lieu dans le rayon :
+  /// le repli reste [MapMarkerItem.defaultPersonalizedName].
+  Future<String?> _suggestPlaceName(double latitude, double longitude) async {
+    if (!Get.isRegistered<PlaceRepository>()) return null;
+    try {
+      final nearest = await Get.find<PlaceRepository>().nearest(latitude: latitude, longitude: longitude);
+      return nearest?.name;
+    } catch (error) {
+      Diag.event('MapController.suggestPlaceName.fail', '$error');
+      return null;
+    }
+  }
+
+  /// Après un glisser-déposer du repère temporaire dont le nom est encore
+  /// automatique : propose le lieu le plus proche de la nouvelle position
+  /// (ou retombe sur le générique s'il n'y en a plus dans le rayon).
+  Future<void> _applyPendingSuggestion() => Diag.future('MapController.applyPendingSuggestion', () async {
+    final marker = pendingMarker.value;
+    if (marker == null) return;
+    final suggestion = await _suggestPlaceName(marker.latitude, marker.longitude);
+    final current = pendingMarker.value;
+    if (current == null || current.id != marker.id || !_pendingNameAuto) return;
+    final name = suggestion ?? MapMarkerItem.defaultPersonalizedName;
+    if (name != current.name) {
+      pendingMarker.value = current.copyWith(name: name);
+    }
+  });
 
   Future<void> showPendingMarkerAt(LatLng latLng) => Diag.future(
     'MapController.showPendingMarkerAt',
     () async {
+      final suggestion = await _suggestPlaceName(latLng.latitude, latLng.longitude);
       final marker = MapMarkerItem(
         id: 'pending_${DateTime.now().millisecondsSinceEpoch}',
-        name: MapMarkerItem.defaultPersonalizedName,
+        name: suggestion ?? MapMarkerItem.defaultPersonalizedName,
         type: 'personnalisé',
         latitude: latLng.latitude,
         longitude: latLng.longitude,
         orderIndex: _editor.validatedMarkers.length,
       );
       await showPendingMarker(marker, recenter: false);
+      // Le nom proposé est automatique : il suivra un éventuel glisser.
+      _pendingNameAuto = true;
     },
     params:
         'lat=${latLng.latitude.toStringAsFixed(5)} '
@@ -627,6 +792,9 @@ class MapController extends GetxController {
   );
 
   Future<void> showPendingMarker(MapMarkerItem marker, {bool recenter = true}) async {
+    // Toute autre source (ex. résultat de recherche) arrive déjà nommée :
+    // le nom n'est pas automatique, un glisser ne le remplacera pas.
+    _pendingNameAuto = false;
     if (_editor.mutationsBlocked) {
       Diag.event('MapController.showPendingMarker', 'loadingDraft');
       return;
@@ -682,6 +850,20 @@ class MapController extends GetxController {
       _isUpdatingPendingMarker = false;
     }
   }
+
+  /// Met à jour le nom du repère temporaire depuis la fiche de saisie ;
+  /// un nom vide retombe sur [MapMarkerItem.defaultPersonalizedName].
+  void setPendingMarkerName(String name) => Diag.frequentSync('MapController.setPendingMarkerName', () {
+    final marker = pendingMarker.value;
+    if (marker == null) return;
+    final trimmed = name.trim();
+    // Un nom saisi n'est plus automatique : il ne sera pas remplacé par
+    // une suggestion au prochain glisser-déposer.
+    _pendingNameAuto = trimmed.isEmpty;
+    pendingMarker.value = marker.copyWith(
+      name: trimmed.isEmpty ? MapMarkerItem.defaultPersonalizedName : trimmed,
+    );
+  }, params: 'markerId=${pendingMarker.value?.id}');
 
   Future<void> validatePendingMarker() async {
     if (_editor.mutationsBlocked) {
@@ -753,6 +935,9 @@ class MapController extends GetxController {
         latitude: current.latitude,
         longitude: current.longitude,
       );
+      // Nom encore automatique (suggestion ou générique) : le repère a
+      // bougé, la suggestion du lieu le plus proche est recalculée.
+      if (_pendingNameAuto) unawaited(_applyPendingSuggestion());
       Diag.event(
         'MapController.pendingMarkerDragged',
         'lat=${current.latitude.toStringAsFixed(5)} '

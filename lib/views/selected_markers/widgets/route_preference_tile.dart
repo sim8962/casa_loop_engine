@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import 'package:casa_loop_engine/views/selected_markers/controllers/selected_markers_controller.dart';
@@ -34,7 +35,7 @@ class RoutePreferenceTile extends GetView<SelectedMarkersController> {
         final label = controller.roadPreferenceLabel(value);
         final color = controller.colorForSegment(segmentIndex);
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -43,7 +44,7 @@ class RoutePreferenceTile extends GetView<SelectedMarkersController> {
                 'Rep. $startNumber → Rep. $endNumber',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text('Profil : $label', style: Theme.of(context).textTheme.bodySmall),
               Slider(
                 value: value,
@@ -64,16 +65,16 @@ class RoutePreferenceTile extends GetView<SelectedMarkersController> {
                   }
                 },
               ),
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Rapide', style: TextStyle(fontSize: 11)),
-                  Text('Trail', style: TextStyle(fontSize: 11)),
+                  Text('Rapide', style: TextStyle(fontSize: 11.sp)),
+                  Text('Trail', style: TextStyle(fontSize: 11.sp)),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Text('Couleur du tracé', style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 4),
+              SizedBox(height: 4.h),
               SegmentColorPicker(
                 palette: controller.segmentColorPalette,
                 selected: color,

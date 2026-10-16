@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:casa_loop_engine/helpers/diagnostics/diag.dart';
 
@@ -7,7 +8,12 @@ import 'package:casa_loop_engine/helpers/diagnostics/diag.dart';
 /// [selected] est mise en évidence. Sans dépendance externe : couleurs
 /// hexadécimales `#RRGGBB` déjà utilisées par le reste de l'application.
 class SegmentColorPicker extends StatelessWidget {
-  const SegmentColorPicker({super.key, required this.palette, required this.selected, required this.onChanged});
+  const SegmentColorPicker({
+    super.key,
+    required this.palette,
+    required this.selected,
+    required this.onChanged,
+  });
 
   final List<String> palette;
   final String selected;
@@ -17,8 +23,8 @@ class SegmentColorPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     return Diag.sync('SegmentColorPicker.build', () {
       return Wrap(
-        spacing: 8,
-        runSpacing: 8,
+        spacing: 8.w,
+        runSpacing: 8.h,
         children: [
           for (final colorHex in palette)
             _Swatch(
@@ -51,16 +57,17 @@ class _Swatch extends StatelessWidget {
         onTap();
       },
       child: Container(
-        width: 28,
-        height: 28,
+        width: 28.r,
+        height: 28.r,
         decoration: BoxDecoration(
           color: _color,
           shape: BoxShape.circle,
-          border: Border.all(color: isSelected ? Colors.black : Colors.black26, width: isSelected ? 2.5 : 1),
+          border: Border.all(
+            color: isSelected ? Colors.black : Colors.black26,
+            width: isSelected ? 2.5.r : 1.r,
+          ),
         ),
-        child: isSelected
-            ? const Icon(Icons.check, color: Colors.white, size: 16)
-            : null,
+        child: isSelected ? Icon(Icons.check, color: Colors.white, size: 16.r) : null,
       ),
     );
   }

@@ -19,7 +19,6 @@ class PlaceImportItem {
     required this.longitude,
     this.importance,
     this.population,
-    this.dataVersion,
   });
 
   factory PlaceImportItem.fromJson(Map<String, dynamic> json) => Diag.frequentSync(
@@ -55,7 +54,6 @@ class PlaceImportItem {
         longitude: (lonRaw as num).toDouble(),
         importance: (json['importance'] as num?)?.toDouble(),
         population: (json['population'] as num?)?.toInt(),
-        dataVersion: json['dataVersion']?.toString(),
       );
     },
     params: 'fields=${json.keys.length}',
@@ -73,9 +71,8 @@ class PlaceImportItem {
   final double longitude;
   final double? importance;
   final int? population;
-  final String? dataVersion;
 
-  PlaceEntity toEntity() => Diag.frequentSync(
+  PlaceEntity toEntity({required String dataVersion}) => Diag.frequentSync(
     'PlaceImportItem.toEntity',
     () => PlaceEntity(
       osmId: osmId,

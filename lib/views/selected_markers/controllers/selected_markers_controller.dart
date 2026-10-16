@@ -31,12 +31,9 @@ class SelectedMarkersController extends GetxController {
   Rx<LoopTargetMode> get loopTargetMode => _editor.loopTargetMode;
   RxInt get draftRestoreVersion => _editor.draftRestoreVersion;
   RxBool get isSavingDraft => _editor.isSavingDraft;
-  RxBool get isLoadingDraft => _editor.isLoadingDraft;
   RxBool get isTracing => _editor.isTracing;
   RxnString get traceError => _editor.traceError;
-  Rxn<ComputedRoute> get tracedSegment => _editor.tracedSegment;
-  RxnString get currentDraftId => _editor.currentDraftId;
-  RxString get draftName => _editor.draftName;
+  Rxn<ComputedItinerary> get tracedItinerary => _editor.tracedItinerary;
   bool get mutationsBlocked => _editor.mutationsBlocked;
 
   /// Nom affiché pour le trajet en cours d'édition : le nom personnalisé,
@@ -67,7 +64,8 @@ class SelectedMarkersController extends GetxController {
   Future<void> flushWorkingState() => _editor.flushWorkingState();
   Future<void> saveDraft() => _editor.saveDraft();
   Future<void> saveDraftAsCopy({String? name}) => _editor.saveDraftAsCopy(name: name);
-  Future<void> newDraft() => _editor.newDraft();
+  Future<void> newDraft({bool discardUnsavedResult = false}) =>
+      _editor.newDraft(discardUnsavedResult: discardUnsavedResult);
   Future<void> traceRoute() => _editor.traceRoute();
 
   /// Recentre la carte sur [marker] si un [MapController] est enregistré ;

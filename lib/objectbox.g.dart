@@ -121,7 +121,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(3, 8787787275157982284),
     name: 'RouteDraftEntity',
-    lastPropertyId: const obx_int.IdUid(12, 1050215820829585425),
+    lastPropertyId: const obx_int.IdUid(13, 7818952152867829680),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -194,6 +194,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(12, 1050215820829585425),
         name: 'createdAtMillis',
         type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 7818952152867829680),
+        name: 'snapshotJson',
+        type: 9,
         flags: 0,
       ),
     ],
@@ -589,7 +595,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final markersJsonOffset = fbb.writeString(object.markersJson);
         final preferencesJsonOffset = fbb.writeString(object.preferencesJson);
         final nameOffset = fbb.writeString(object.name);
-        fbb.startTable(13);
+        final snapshotJsonOffset = object.snapshotJson == null
+            ? null
+            : fbb.writeString(object.snapshotJson!);
+        fbb.startTable(14);
         fbb.addInt64(0, object.id);
         fbb.addInt64(1, object.savedAtMillis);
         fbb.addOffset(2, targetModeOffset);
@@ -602,6 +611,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(9, preferencesJsonOffset);
         fbb.addOffset(10, nameOffset);
         fbb.addInt64(11, object.createdAtMillis);
+        fbb.addOffset(12, snapshotJsonOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -660,6 +670,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final preferencesJsonParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGet(buffer, rootOffset, 22, '');
+        final snapshotJsonParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 28);
         final object = RouteDraftEntity(
           id: idParam,
           name: nameParam,
@@ -673,6 +686,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           averageSpeedKmh: averageSpeedKmhParam,
           markersJson: markersJsonParam,
           preferencesJson: preferencesJsonParam,
+          snapshotJson: snapshotJsonParam,
         );
 
         return object;
@@ -1059,6 +1073,11 @@ class RouteDraftEntity_ {
   /// See [RouteDraftEntity.createdAtMillis].
   static final createdAtMillis = obx.QueryIntegerProperty<RouteDraftEntity>(
     _entities[2].properties[11],
+  );
+
+  /// See [RouteDraftEntity.snapshotJson].
+  static final snapshotJson = obx.QueryStringProperty<RouteDraftEntity>(
+    _entities[2].properties[12],
   );
 }
 

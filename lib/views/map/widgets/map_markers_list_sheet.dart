@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:casa_loop_engine/models/map_marker_item.dart';
 import 'package:casa_loop_engine/helpers/diagnostics/diag.dart';
@@ -22,15 +23,20 @@ Future<MapMarkerItem?> showMapMarkersListSheet(
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    builder: (_) => FractionallySizedBox(
-      heightFactor: 0.75,
-      child: MapMarkersListSheet(
-        markers: markers,
-        onDelete: onDelete,
-        onReorder: onReorder,
-        onValidate: onValidate,
-        onRename: onRename,
-        displayName: displayName,
+    builder: (sheetContext) => Padding(
+      // La feuille se soulève au-dessus du clavier : sinon le bouton
+      // « Valider » et le bas de la liste restent cachés.
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(sheetContext).bottom),
+      child: FractionallySizedBox(
+        heightFactor: 0.75,
+        child: MapMarkersListSheet(
+          markers: markers,
+          onDelete: onDelete,
+          onReorder: onReorder,
+          onValidate: onValidate,
+          onRename: onRename,
+          displayName: displayName,
+        ),
       ),
     ),
   ),
@@ -190,11 +196,14 @@ class _MapMarkersListSheetState extends State<MapMarkersListSheet> {
       return Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 8, 8),
+            padding: EdgeInsets.fromLTRB(20.w, 0, 8.w, 8.h),
             child: Row(
               children: [
-                const Expanded(
-                  child: Text('Mes repères', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Expanded(
+                  child: Text(
+                    'Mes repères',
+                    style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold),
+                  ),
                 ),
                 IconButton(
                   key: const Key('close-markers-list'),
@@ -230,12 +239,12 @@ class _MapMarkersListSheetState extends State<MapMarkersListSheet> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle)),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12.w),
                             CircleAvatar(
-                              radius: 14,
-                              child: Text('$number', style: const TextStyle(fontSize: 12)),
+                              radius: 14.r,
+                              child: Text('$number', style: TextStyle(fontSize: 12.sp)),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8.w),
                             const Icon(Icons.location_on),
                           ],
                         ),
@@ -286,7 +295,7 @@ class _MapMarkersListSheetState extends State<MapMarkersListSheet> {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 16.h),
               child: SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
@@ -310,8 +319,8 @@ class _MapMarkersListSheetState extends State<MapMarkersListSheet> {
                             if (mounted) setState(() => _busy = false);
                           }
                         },
-                  icon: const Icon(Icons.check),
-                  label: const Text('Valider'),
+                  icon: const Icon(Icons.tune),
+                  label: const Text('Réglages du trajet'),
                 ),
               ),
             ),

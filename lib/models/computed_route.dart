@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-/// Identité des deux repères à l'origine d'un [ComputedRoute], capturée au
+/// Identité des deux repères à l'origine d'un segment tracé, capturée au
 /// lancement du calcul : identifiants stables et numéros affichés à cet
 /// instant (position dans la liste, 1-indexée). Associée au résultat pour
 /// que le libellé affiché (`Rep. X → Rep. Y`) reste celui du calcul, même
@@ -124,6 +124,51 @@ class ComputedRoute {
     );
   }
 
+  /// Décode une réponse pouvant contenir des variantes `alternates`
+  /// (demandées avec `alternates: n` sur une requête à 2 localisations —
+  /// le moteur force 0 au-delà) : la route principale suivie de chaque
+  /// variante `{ "trip": … }` sérialisée par le moteur sous
+  /// `response['alternates']`. Une variante malformée est ignorée sans
+  /// compromettre la route principale ; le `trip` principal, lui, lève
+  /// [FormatException] comme [fromValhallaJson].
+  static List<ComputedRoute> listFromValhallaJson(
+    Map<String, dynamic> response, {
+    required double requestedStartLat,
+    required double requestedStartLon,
+    required double requestedEndLat,
+    required double requestedEndLon,
+  }) {
+    final routes = <ComputedRoute>[
+      ComputedRoute.fromValhallaJson(
+        response,
+        requestedStartLat: requestedStartLat,
+        requestedStartLon: requestedStartLon,
+        requestedEndLat: requestedEndLat,
+        requestedEndLon: requestedEndLon,
+      ),
+    ];
+    final alternates = response['alternates'];
+    if (alternates is List) {
+      for (final alternate in alternates) {
+        if (alternate is! Map<String, dynamic>) continue;
+        try {
+          routes.add(
+            ComputedRoute.fromValhallaJson(
+              alternate,
+              requestedStartLat: requestedStartLat,
+              requestedStartLon: requestedStartLon,
+              requestedEndLat: requestedEndLat,
+              requestedEndLon: requestedEndLon,
+            ),
+          );
+        } on FormatException {
+          // Variante inutilisable : ignorée, les autres restent valides.
+        }
+      }
+    }
+    return routes;
+  }
+
   /// Décode une polyline encodée à 6 décimales de précision (format de
   /// géométrie produit par Valhalla dans `legs[].shape`).
   static List<ComputedRoutePoint> decodePolyline6(String encoded) {
@@ -175,5 +220,57 @@ class ComputedRoute {
     final a = sinDLat * sinDLat + math.cos(lat1 * degToRad) * math.cos(lat2 * degToRad) * sinDLon * sinDLon;
     final c = 2 * math.asin(math.sqrt(a.clamp(0.0, 1.0)));
     return earthRadiusMeters * c;
+  }
+}
+
+/// Un segment du trajet calculé par « Tracer » : géométrie et mesures
+/// moteur retournées pour le couple dirigé décrit par [identity].
+class TracedSegment {
+  const TracedSegment({required this.identity, required this.route});
+
+  /// Couple dirigé (identifiants stables et numéros affichés au lancement
+  /// du calcul) à l'origine de [route]. Sert aussi à retrouver la couleur
+  /// choisie pour ce couple, indépendamment de la position du segment.
+  final TracedSegmentIdentity identity;
+
+  /// Résultat moteur du segment.
+  final ComputedRoute route;
+}
+
+/// Résultat complet d'un « Tracer » : les N segments de la boucle
+/// 1→2→…→N→1 (segments consécutifs puis retour obligatoire du dernier
+/// repère au départ), chacun conservé avec son identité dirigée. Les
+/// totaux sont la somme exacte des distances et durées moteur de tous
+/// les segments, retour compris.
+class ComputedItinerary {
+  const ComputedItinerary({required this.segments, required this.computedAt});
+
+  /// Segments calculés, dans l'ordre des repères au lancement du calcul.
+  final List<TracedSegment> segments;
+
+  /// Date à laquelle le contenu de cette boucle a été calculé/fixé par
+  /// le moteur : l'instant de publication d'un « Tracer » complet, ou
+  /// celui de la recherche qui a produit une variante retenue ; pour un
+  /// résultat restauré depuis la bibliothèque, la date du calcul initial
+  /// enregistrée dans le snapshot. Distincte de la date de sauvegarde
+  /// du trajet.
+  final DateTime computedAt;
+
+  /// Somme des distances moteur ([ComputedRoute.distanceKm]), en km.
+  double get totalDistanceKm {
+    var total = 0.0;
+    for (final segment in segments) {
+      total += segment.route.distanceKm;
+    }
+    return total;
+  }
+
+  /// Somme des durées moteur ([ComputedRoute.durationSeconds]), en secondes.
+  double get totalDurationSeconds {
+    var total = 0.0;
+    for (final segment in segments) {
+      total += segment.route.durationSeconds;
+    }
+    return total;
   }
 }

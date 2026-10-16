@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:casa_loop_engine/objectbox.g.dart';
 
@@ -7,7 +6,7 @@ import 'package:casa_loop_engine/models/entities/place_entity.dart';
 import 'package:casa_loop_engine/models/imports/place_import_item.dart';
 import 'package:casa_loop_engine/helpers/diagnostics/diag.dart';
 
-enum PlacesImportErrorType { missingFile, invalidJson, invalidRoot, invalidEntry }
+enum PlacesImportErrorType { invalidJson, invalidRoot, invalidEntry }
 
 class PlacesImportException implements Exception {
   const PlacesImportException(this.type, this.message);
@@ -19,48 +18,18 @@ class PlacesImportException implements Exception {
   String toString() => 'PlacesImportException($type): $message';
 }
 
-class PlacesImportResult {
-  const PlacesImportResult({required this.importedCount, this.dataVersion});
-
-  final int importedCount;
-  final String? dataVersion;
-}
-
 class PlacesImportService {
   PlacesImportService(this.placeBox);
 
   final Box<PlaceEntity> placeBox;
 
-  Future<PlacesImportResult> importFromFile(String filePath, {String? dataVersion}) => Diag.future(
-    'PlacesImportService.importFromFile',
-    () async {
-      final file = File(filePath);
-      if (!await file.exists()) {
-        throw const PlacesImportException(PlacesImportErrorType.missingFile, 'Fichier non trouvé');
-      }
-      final jsonString = await file.readAsString();
-      return importFromString(jsonString, dataVersion: dataVersion);
-    },
-    params: 'path=$filePath',
-    result: (r) => 'imported=${r.importedCount} version=${r.dataVersion}',
-  );
+  Future<void> importFromString(String jsonString, {required String dataVersion}) =>
+      Diag.future('PlacesImportService.importFromString', () async {
+        final entities = _parseEntities(jsonString, dataVersion: dataVersion);
+        placeBox.putMany(entities);
+      }, params: 'jsonBytes=${jsonString.length} version=$dataVersion');
 
-  Future<PlacesImportResult> importFromString(String jsonString, {String? dataVersion}) => Diag.future(
-    'PlacesImportService.importFromString',
-    () async {
-      final entities = parseEntities(jsonString, dataVersion: dataVersion);
-      placeBox.putMany(entities);
-
-      return PlacesImportResult(
-        importedCount: entities.length,
-        dataVersion: dataVersion ?? _commonDataVersion(entities),
-      );
-    },
-    params: 'jsonBytes=${jsonString.length}',
-    result: (r) => 'imported=${r.importedCount} version=${r.dataVersion}',
-  );
-
-  static List<PlaceEntity> parseEntities(String jsonString, {String? dataVersion}) => Diag.sync(
+  static List<PlaceEntity> _parseEntities(String jsonString, {required String dataVersion}) => Diag.sync(
     'PlacesImportService.parseEntities',
     () {
       final Object? decoded;
@@ -89,11 +58,7 @@ class PlacesImportService {
         try {
           final item = PlaceImportItem.fromJson(raw);
           _validateCoordinates(item);
-          final entity = item.toEntity();
-          if (dataVersion != null) {
-            entity.dataVersion = dataVersion;
-          }
-          entities.add(entity);
+          entities.add(item.toEntity(dataVersion: dataVersion));
         } on FormatException catch (e) {
           errors.add('Élément $i : ${e.message}');
         } on TypeError {
@@ -120,12 +85,4 @@ class PlacesImportService {
           throw FormatException('longitude invalide pour ${item.osmId} : ${item.longitude}');
         }
       }, params: 'osmId=${item.osmId}');
-
-  static String? _commonDataVersion(List<PlaceEntity> entities) =>
-      Diag.sync('PlacesImportService._commonDataVersion', () {
-        if (entities.isEmpty) return null;
-        final versions = entities.map((e) => e.dataVersion).toSet();
-        if (versions.length == 1) return versions.single;
-        return null;
-      }, params: 'entities=${entities.length}');
 }

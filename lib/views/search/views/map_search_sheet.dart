@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import 'package:casa_loop_engine/models/map_marker_item.dart';
@@ -12,7 +13,12 @@ Future<MapMarkerItem?> showMapSearchSheet(BuildContext context) => Diag.future(
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    builder: (_) => const FractionallySizedBox(heightFactor: 0.75, child: MapSearchSheet()),
+    builder: (sheetContext) => Padding(
+      // La feuille se soulève au-dessus du clavier : sans cela le bas
+      // de la liste des résultats reste caché et inatteignable.
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(sheetContext).bottom),
+      child: const FractionallySizedBox(heightFactor: 0.75, child: MapSearchSheet()),
+    ),
   ),
   result: (result) => result == null ? 'selected=null' : 'selected="${result.name}" id=${result.id}',
 );
@@ -65,11 +71,14 @@ class _MapSearchSheetBodyState extends State<_MapSearchSheetBody> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 8, 8),
+            padding: EdgeInsets.fromLTRB(20.w, 0, 8.w, 8.h),
             child: Row(
               children: [
-                const Expanded(
-                  child: Text('Rechercher', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                Expanded(
+                  child: Text(
+                    'Rechercher',
+                    style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold),
+                  ),
                 ),
                 IconButton(
                   key: const Key('close-map-search'),
@@ -84,7 +93,7 @@ class _MapSearchSheetBodyState extends State<_MapSearchSheetBody> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: TextField(
               key: const Key('map-search-field'),
               controller: _searchController,
@@ -97,7 +106,7 @@ class _MapSearchSheetBodyState extends State<_MapSearchSheetBody> {
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10.h),
           const TabBar(
             tabs: [
               Tab(text: 'Lieux'),

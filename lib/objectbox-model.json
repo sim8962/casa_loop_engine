@@ -89,7 +89,7 @@
     },
     {
       "id": "3:8787787275157982284",
-      "lastPropertyId": "12:1050215820829585425",
+      "lastPropertyId": "13:7818952152867829680",
       "name": "RouteDraftEntity",
       "properties": [
         {
@@ -152,6 +152,11 @@
           "id": "12:1050215820829585425",
           "name": "createdAtMillis",
           "type": 6
+        },
+        {
+          "id": "13:7818952152867829680",
+          "name": "snapshotJson",
+          "type": 9
         }
       ],
       "relations": []

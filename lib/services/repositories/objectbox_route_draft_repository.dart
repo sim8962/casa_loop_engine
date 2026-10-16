@@ -5,7 +5,9 @@ import '../../../objectbox.g.dart';
 import 'package:casa_loop_engine/models/map_marker_item.dart';
 import 'package:casa_loop_engine/models/route_draft.dart';
 import 'package:casa_loop_engine/models/route_draft_segment_preference.dart';
+import 'package:casa_loop_engine/models/saved_route_snapshot.dart';
 import 'package:casa_loop_engine/services/repositories/route_draft_repository.dart';
+import 'package:casa_loop_engine/services/routing/route_snapshot_codec.dart';
 import 'package:casa_loop_engine/models/entities/route_draft_entity.dart';
 import 'package:casa_loop_engine/services/objectbox/objectbox_store.dart';
 import 'package:casa_loop_engine/helpers/diagnostics/diag.dart';
@@ -32,11 +34,15 @@ class ObjectBoxRouteDraftRepository implements RouteDraftRepository {
         targetMode: draft.targetMode,
         targetDistanceKm: draft.targetDistanceKm,
         targetDurationHours: draft.targetDurationHours,
-        totalDistanceKm: draft.totalDistanceKm,
-        totalDurationHours: draft.totalDurationHours,
-        averageSpeedKmh: draft.averageSpeedKmh,
+        totalDistanceKm: 0,
+        totalDurationHours: 0,
+        averageSpeedKmh: 0,
         markersJson: _encodeMarkers(draft.markers),
         preferencesJson: _encodePreferences(draft.preferences),
+        // `null` est écrit tel quel : une sauvegarde sans tracé valide
+        // efface explicitement une éventuelle géométrie ancienne plutôt
+        // que de la laisser paraître actuelle.
+        snapshotJson: draft.computedResult == null ? null : RouteSnapshotCodec.encode(draft.computedResult!),
       );
       final id = await _box.putAsync(entity);
       return id.toString();
@@ -71,7 +77,14 @@ class ObjectBoxRouteDraftRepository implements RouteDraftRepository {
     return drafts;
   }, result: (drafts) => 'count=${drafts.length}');
 
-  RouteDraft _toDraft(RouteDraftEntity entity) => routeDraftFromEntity(entity);
+  @override
+  Future<void> delete(String id) => Diag.future('ObjectBoxRouteDraftRepository.delete', () async {
+    final boxId = int.tryParse(id);
+    if (boxId == null) return;
+    await _box.removeAsync(boxId);
+  }, params: 'id=$id');
+
+  RouteDraft _toDraft(RouteDraftEntity entity) => _routeDraftFromEntity(entity);
 
   String _encodeMarkers(List<MapMarkerItem> markers) => Diag.sync(
     'ObjectBoxRouteDraftRepository._encodeMarkers',
@@ -117,14 +130,13 @@ class ObjectBoxRouteDraftRepository implements RouteDraftRepository {
   );
 }
 
-/// Convertit une entité ObjectBox en [RouteDraft], isolée du repository
-/// pour être testable sans dépendance native.
+/// Convertit une entité ObjectBox en [RouteDraft].
 ///
 /// Ancienne entrée écrite avant l'ajout de `createdAtMillis` : le champ
 /// vaut `0`. On retombe alors sur `savedAtMillis` comme base stable du
 /// nom par défaut ; cette valeur est conservée à la première modification
 /// (le controller réécrit la même date à la sauvegarde suivante).
-RouteDraft routeDraftFromEntity(RouteDraftEntity entity) => RouteDraft(
+RouteDraft _routeDraftFromEntity(RouteDraftEntity entity) => RouteDraft(
   id: entity.id.toString(),
   name: entity.name,
   createdAt: DateTime.fromMillisecondsSinceEpoch(
@@ -134,12 +146,26 @@ RouteDraft routeDraftFromEntity(RouteDraftEntity entity) => RouteDraft(
   targetMode: entity.targetMode,
   targetDistanceKm: entity.targetDistanceKm,
   targetDurationHours: entity.targetDurationHours,
-  totalDistanceKm: entity.totalDistanceKm,
-  totalDurationHours: entity.totalDurationHours,
-  averageSpeedKmh: entity.averageSpeedKmh,
   markers: _decodeMarkers(entity.markersJson),
   preferences: _decodePreferences(entity.preferencesJson),
+  computedResult: _decodeSnapshot(entity.snapshotJson),
 );
+
+/// Décode le résultat enregistré, de façon tolérante : un snapshot
+/// absent (`null` — trajet ancien ou « à recalculer »), corrompu ou
+/// d'une version non prise en charge retombe sur `null`, avec une trace
+/// de diagnostic — jamais une erreur qui priverait l'utilisateur des
+/// repères du trajet. La vérification de cohérence avec les repères et
+/// préférences relève du chargeur (`SavedRouteSnapshot.correspondsTo`).
+SavedRouteSnapshot? _decodeSnapshot(String? json) {
+  if (json == null) return null;
+  try {
+    return RouteSnapshotCodec.decode(json);
+  } on RouteSnapshotFormatException catch (error, stack) {
+    Diag.error('ObjectBoxRouteDraftRepository._decodeSnapshot', error, stack);
+    return null;
+  }
+}
 
 List<MapMarkerItem> _decodeMarkers(String json) => Diag.sync(
   'ObjectBoxRouteDraftRepository._decodeMarkers',

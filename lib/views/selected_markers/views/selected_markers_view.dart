@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import 'package:casa_loop_engine/routes/route_draft_loader.dart';
+import 'package:casa_loop_engine/views/common/route_dialogs.dart';
 import 'package:casa_loop_engine/views/selected_markers/controllers/selected_markers_controller.dart';
 import 'package:casa_loop_engine/views/selected_markers/widgets/route_name_field.dart';
 import 'package:casa_loop_engine/views/selected_markers/widgets/route_preference_tile.dart';
@@ -20,7 +22,7 @@ class SelectedMarkersView extends GetView<SelectedMarkersController> {
     return Diag.sync('SelectedMarkersView.build', () {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Repères choisis'),
+          title: const Text('Préparer la boucle'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
@@ -64,21 +66,32 @@ class SelectedMarkersView extends GetView<SelectedMarkersController> {
               const TargetLoopFields(),
               if (controller.loopSummary.value.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 8),
+                  padding: EdgeInsets.only(top: 8.h, left: 16.w, right: 16.w, bottom: 8.h),
                   child: Obx(() {
-                    return FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        controller.loopSummary.value,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-                      ),
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Estimation de boucle, retour inclus',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            controller.loopSummary.value,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
                     );
                   }),
                 ),
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: EdgeInsets.symmetric(vertical: 8.h),
                   // N repères + N segments (boucle fermée) + 1 rappel visuel du
                   // repère de départ à la fin, pour visualiser le retour.
                   itemCount: markers.length * 2 + 1,
@@ -94,9 +107,9 @@ class SelectedMarkersView extends GetView<SelectedMarkersController> {
                           ? '${marker.type} — ${marker.roadRef}'
                           : '${marker.type} — ${marker.latitude.toStringAsFixed(4)}, ${marker.longitude.toStringAsFixed(4)}';
                       return ListTile(
-                        leading: const CircleAvatar(
-                          radius: 14,
-                          child: Text('1', style: TextStyle(fontSize: 12)),
+                        leading: CircleAvatar(
+                          radius: 14.r,
+                          child: Text('1', style: TextStyle(fontSize: 12.sp)),
                         ),
                         title: Text(controller.markerDisplayName(0)),
                         subtitle: Text(subtitle),
@@ -115,8 +128,8 @@ class SelectedMarkersView extends GetView<SelectedMarkersController> {
                           : '${marker.type} — ${marker.latitude.toStringAsFixed(4)}, ${marker.longitude.toStringAsFixed(4)}';
                       return ListTile(
                         leading: CircleAvatar(
-                          radius: 14,
-                          child: Text('$number', style: const TextStyle(fontSize: 12)),
+                          radius: 14.r,
+                          child: Text('$number', style: TextStyle(fontSize: 12.sp)),
                         ),
                         title: Text(controller.markerDisplayName(markerIndex)),
                         subtitle: Text(subtitle),
@@ -142,7 +155,7 @@ class SelectedMarkersView extends GetView<SelectedMarkersController> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 child: Row(
                   children: [
                     Expanded(
@@ -153,7 +166,7 @@ class SelectedMarkersView extends GetView<SelectedMarkersController> {
                         child: const Text('Sauvegarder'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: ElevatedButton(
                         onPressed:
@@ -163,12 +176,12 @@ class SelectedMarkersView extends GetView<SelectedMarkersController> {
                             ? null
                             : () => _onTraceRoute(context),
                         child: controller.isTracing.value
-                            ? const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                            ? SizedBox(
+                                height: 18.r,
+                                width: 18.r,
+                                child: CircularProgressIndicator(strokeWidth: 2.r),
                               )
-                            : const Text('Tracer'),
+                            : const Text('Tracer la boucle'),
                       ),
                     ),
                   ],
@@ -199,10 +212,11 @@ class SelectedMarkersView extends GetView<SelectedMarkersController> {
     );
   }
 
-  /// Bouton « Tracer » : sauvegarde complète puis calcul moteur du premier
-  /// segment. Les erreurs de sauvegarde et de calcul sont distinguées ;
-  /// après un calcul réussi, l'écran rejoint la carte où la géométrie est
-  /// affichée.
+  /// Bouton « Tracer » : sauvegarde complète puis calcul moteur séquentiel
+  /// des N segments de la boucle (retour du dernier repère au départ
+  /// inclus). Les erreurs de sauvegarde et de calcul sont distinguées ;
+  /// après un calcul réussi, l'écran rejoint la carte où les géométries
+  /// sont affichées.
   Future<void> _onTraceRoute(BuildContext context) async {
     Diag.event('Ui.tap', 'target=SelectedMarkersView.trace');
     final messenger = ScaffoldMessenger.of(context);
@@ -210,7 +224,7 @@ class SelectedMarkersView extends GetView<SelectedMarkersController> {
       await controller.traceRoute();
     } catch (exception) {
       if (!context.mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('Sauvegarde impossible : ${_errorMessage(exception)}')));
+      messenger.showSnackBar(SnackBar(content: Text('Tracé impossible : ${_errorMessage(exception)}')));
       return;
     }
     if (!context.mounted) return;
@@ -219,12 +233,14 @@ class SelectedMarkersView extends GetView<SelectedMarkersController> {
       messenger.showSnackBar(SnackBar(content: Text(traceError), duration: const Duration(seconds: 5)));
       return;
     }
-    final route = controller.tracedSegment.value;
-    if (route == null) return;
+    final itinerary = controller.tracedItinerary.value;
+    if (itinerary == null) return;
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          'Tracé calculé : ${route.distanceKm.toStringAsFixed(1)} km — ${_formatDuration(route.durationSeconds)}',
+          'Tracé calculé : ${itinerary.segments.length} segment${itinerary.segments.length > 1 ? 's' : ''} — '
+          '${itinerary.totalDistanceKm.toStringAsFixed(1)} km — ${_formatDuration(itinerary.totalDurationSeconds)} '
+          '(retour inclus)',
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -240,68 +256,31 @@ class SelectedMarkersView extends GetView<SelectedMarkersController> {
     return '${totalMinutes ~/ 60} h ${(totalMinutes % 60).toString().padLeft(2, '0')}';
   }
 
-  /// Menu « Nouveau trajet » : si l'état de travail contient des repères,
-  /// demande d'abord à l'utilisateur de choisir entre Sauvegarder,
-  /// Abandonner et Annuler ; une annulation ou un échec de sauvegarde
-  /// laisse l'état de travail inchangé. Puis démarre un trajet vierge.
+  /// Menu « Nouveau trajet » : si l'état de travail contient des repères
+  /// ou un tracé non enregistré, demande d'abord à l'utilisateur de
+  /// choisir entre Sauvegarder, Abandonner et Annuler (dialogue partagé
+  /// [confirmAndStartNewDraft]) ; une annulation ou un échec de
+  /// sauvegarde laisse l'état de travail inchangé. Puis démarre un
+  /// trajet vierge.
   Future<void> _onNewDraft(BuildContext context) async {
     Diag.event('Ui.tap', 'target=SelectedMarkersView.newDraft');
     final messenger = ScaffoldMessenger.of(context);
-    if (controller.validatedMarkers.isNotEmpty) {
-      final choice = await showDialog<_NewDraftChoice>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Nouveau trajet'),
-          content: const Text('Que faire du trajet en cours ?'),
-          actions: [
-            TextButton(
-              key: const Key('new-draft-cancel'),
-              onPressed: () => Navigator.of(dialogContext).pop(_NewDraftChoice.cancel),
-              child: const Text('Annuler'),
-            ),
-            TextButton(
-              key: const Key('new-draft-discard'),
-              onPressed: () => Navigator.of(dialogContext).pop(_NewDraftChoice.discard),
-              child: const Text('Abandonner'),
-            ),
-            TextButton(
-              key: const Key('new-draft-save'),
-              onPressed: () => Navigator.of(dialogContext).pop(_NewDraftChoice.save),
-              child: const Text('Sauvegarder'),
-            ),
-          ],
-        ),
-      );
-      if (!context.mounted) return;
-      switch (choice) {
-        case null:
-        case _NewDraftChoice.cancel:
-          return;
-        case _NewDraftChoice.discard:
-          break;
-        case _NewDraftChoice.save:
-          try {
-            await controller.saveDraft();
-          } catch (exception) {
-            if (!context.mounted) return;
-            messenger.showSnackBar(
-              SnackBar(content: Text('Sauvegarde impossible : ${_errorMessage(exception)}')),
-            );
-            return;
-          }
-      }
-      if (!context.mounted) return;
-    }
     try {
-      await controller.newDraft();
+      final started = await confirmAndStartNewDraft(context);
+      if (!context.mounted || !started) return;
     } catch (exception) {
       if (!context.mounted) return;
+      // Le résultat de l'action préempte un snackbar plus ancien encore
+      // affiché (les snackbars sont filés par ScaffoldMessenger : sans
+      // retrait explicite, l'erreur attendrait l'expiration de l'info).
+      messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(content: Text('Nouveau trajet impossible : ${_errorMessage(exception)}')),
       );
       return;
     }
     if (!context.mounted) return;
+    messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       const SnackBar(content: Text('Nouveau trajet démarré'), duration: Duration(seconds: 2)),
     );
@@ -366,5 +345,3 @@ class SelectedMarkersView extends GetView<SelectedMarkersController> {
 }
 
 enum _RouteMenuAction { newDraft, saveAsCopy, loadRoute }
-
-enum _NewDraftChoice { save, discard, cancel }

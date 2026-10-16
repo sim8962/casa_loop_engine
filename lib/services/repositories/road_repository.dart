@@ -4,9 +4,5 @@ import 'package:casa_loop_engine/models/map_marker_item.dart';
 ///
 /// L'implémentation attendue en production est `ObjectBoxRoadRepository`.
 abstract class RoadRepository {
-  Future<List<MapMarkerItem>> search(
-    String query, {
-    double? latitude,
-    double? longitude,
-  });
+  Future<List<MapMarkerItem>> search(String query);
 }

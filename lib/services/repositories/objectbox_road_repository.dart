@@ -16,7 +16,7 @@ class ObjectBoxRoadRepository implements RoadRepository {
   static const int _kResultLimit = 50;
 
   @override
-  Future<List<MapMarkerItem>> search(String query, {double? latitude, double? longitude}) => Diag.future(
+  Future<List<MapMarkerItem>> search(String query) => Diag.future(
     'ObjectBoxRoadRepository.search',
     () async {
       final normalized = RoadSearchKeyService.normalize(query);
@@ -36,7 +36,7 @@ class ObjectBoxRoadRepository implements RoadRepository {
         q.close();
       }
     },
-    params: 'query="$query" lat=$latitude lon=$longitude',
+    params: 'query="$query"',
     result: (results) => 'count=${results.length}',
   );
 }

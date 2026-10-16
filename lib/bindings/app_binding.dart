@@ -45,28 +45,17 @@ import 'package:casa_loop_engine/helpers/diagnostics/diag.dart';
 ///   pas la factory (markAsDirty seulement) ; la vue appelle `reset()` à
 ///   chaque ouverture.
 class AppBinding implements Bindings {
-  static Future<void> initializeGlobalServices({
-    ObjectBoxStore? store,
-    String? placesAssetJson,
-    String? routesAssetJson,
-  }) => Diag.future('AppBinding.initializeGlobalServices', () async {
-    final (markerRepo, routePrefRepo) = await _openRepositories(
-      store: store,
-      placesAssetJson: placesAssetJson,
-      routesAssetJson: routesAssetJson,
-    );
-    Get.put<MarkerRepository>(markerRepo, permanent: true);
-    Get.put<RoutePreferenceRepository>(routePrefRepo, permanent: true);
-  });
+  static Future<void> initializeGlobalServices() =>
+      Diag.future('AppBinding.initializeGlobalServices', () async {
+        final (markerRepo, routePrefRepo) = await _openRepositories();
+        Get.put<MarkerRepository>(markerRepo, permanent: true);
+        Get.put<RoutePreferenceRepository>(routePrefRepo, permanent: true);
+      });
 
-  static Future<(MarkerRepository, RoutePreferenceRepository)> _openRepositories({
-    ObjectBoxStore? store,
-    String? placesAssetJson,
-    String? routesAssetJson,
-  }) async {
+  static Future<(MarkerRepository, RoutePreferenceRepository)> _openRepositories() async {
     final op = Diag.start('AppBinding._openRepositories');
     try {
-      final objectBox = store ?? await ObjectBoxStore.open();
+      final objectBox = await ObjectBoxStore.open();
       final markerRepo = ObjectBoxMarkerRepository(objectBox);
       final routePrefRepo = ObjectBoxRoutePreferenceRepository(objectBox);
       final draftRepo = ObjectBoxRouteDraftRepository(objectBox);
@@ -77,14 +66,14 @@ class AppBinding implements Bindings {
       final roadRepo = ObjectBoxRoadRepository(objectBox);
       final routesInitializer = RoutesDataInitializer(roadBox);
 
-      await placesInitializer.initialize(assetJson: placesAssetJson);
-      await routesInitializer.initialize(assetJson: routesAssetJson);
+      await placesInitializer.initialize();
+      await routesInitializer.initialize();
 
       Get.put(ObjectBoxWorkingStateRepository(objectBox), permanent: true);
       Get.put(ObjectBoxLifecycle(objectBox)..listen(), permanent: true);
       Get.put<RouteDraftRepository>(draftRepo, permanent: true);
-      Get.put<PlaceRepository>(placeRepo, tag: 'objectbox', permanent: true);
-      Get.put<RoadRepository>(roadRepo, tag: 'objectbox', permanent: true);
+      Get.put<PlaceRepository>(placeRepo, permanent: true);
+      Get.put<RoadRepository>(roadRepo, permanent: true);
 
       op.end('repositories=objectbox');
       return (markerRepo, routePrefRepo);
@@ -102,12 +91,6 @@ class AppBinding implements Bindings {
         'AppBinding.create OfflineMapService',
         () => OfflineMapService(sourcePath: AppConfig.mbtilesSourcePath),
       ),
-    );
-    Get.lazyPut<PlaceRepository>(
-      () => Diag.sync('AppBinding.create PlaceRepository', () => Get.find<PlaceRepository>(tag: 'objectbox')),
-    );
-    Get.lazyPut<RoadRepository>(
-      () => Diag.sync('AppBinding.create RoadRepository', () => Get.find<RoadRepository>(tag: 'objectbox')),
     );
     Get.lazyPut<OfflineRoutingService>(
       () => Diag.sync('AppBinding.create OfflineRoutingService', () => OfflineRoutingService()),

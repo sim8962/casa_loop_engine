@@ -11,11 +11,8 @@ class ObjectBoxStore {
 
   final Store store;
 
-  static Future<ObjectBoxStore> open({String? directory}) => Diag.future(
-    'ObjectBoxStore.open',
-    () async => ObjectBoxStore._(await openStore(directory: directory)),
-    params: 'directory=${directory ?? "default"}',
-  );
+  static Future<ObjectBoxStore> open() =>
+      Diag.future('ObjectBoxStore.open', () async => ObjectBoxStore._(await openStore()));
 
   void close() => Diag.sync('ObjectBoxStore.close', store.close);
 }

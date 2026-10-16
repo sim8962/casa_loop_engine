@@ -1,5 +1,4 @@
 import 'package:casa_loop_engine/models/route_draft.dart';
-import 'package:casa_loop_engine/helpers/diagnostics/diag.dart';
 
 /// Persistance de la bibliothèque des trajets sauvegardés : plusieurs
 /// trajets indépendants, chacun identifié par [RouteDraft.id].
@@ -16,50 +15,8 @@ abstract interface class RouteDraftRepository {
   /// Liste tous les trajets sauvegardés, du plus récemment sauvegardé au
   /// plus ancien.
   Future<List<RouteDraft>> listAll();
-}
 
-/// Implémentation volatile, utilisée en test ou en secours.
-class InMemoryRouteDraftRepository implements RouteDraftRepository {
-  final Map<String, RouteDraft> _drafts = {};
-  int _nextId = 1;
-
-  @override
-  Future<String> save(RouteDraft draft) => Diag.future(
-    'InMemoryRouteDraftRepository.save',
-    () async {
-      final id = draft.id ?? (_nextId++).toString();
-      _drafts[id] = RouteDraft(
-        id: id,
-        name: draft.name,
-        createdAt: draft.createdAt,
-        savedAt: draft.savedAt,
-        targetMode: draft.targetMode,
-        targetDistanceKm: draft.targetDistanceKm,
-        targetDurationHours: draft.targetDurationHours,
-        totalDistanceKm: draft.totalDistanceKm,
-        totalDurationHours: draft.totalDurationHours,
-        averageSpeedKmh: draft.averageSpeedKmh,
-        markers: draft.markers,
-        preferences: draft.preferences,
-      );
-      return id;
-    },
-    params: 'id=${draft.id ?? "new"} markers=${draft.markers.length}',
-    result: (id) => 'id=$id',
-  );
-
-  @override
-  Future<RouteDraft?> load(String id) => Diag.future(
-    'InMemoryRouteDraftRepository.load',
-    () async => _drafts[id],
-    params: 'id=$id',
-    result: (draft) => 'found=${draft != null}',
-  );
-
-  @override
-  Future<List<RouteDraft>> listAll() => Diag.future(
-    'InMemoryRouteDraftRepository.listAll',
-    () async => _drafts.values.toList()..sort((a, b) => b.savedAt.compareTo(a.savedAt)),
-    result: (drafts) => 'count=${drafts.length}',
-  );
+  /// Supprime définitivement le trajet [id] de la bibliothèque. Sans
+  /// effet si l'identifiant est invalide ou ne correspond à aucun trajet.
+  Future<void> delete(String id);
 }

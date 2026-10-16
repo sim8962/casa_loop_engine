@@ -12,12 +12,10 @@ import 'package:casa_loop_engine/helpers/diagnostics/diag.dart';
 class PlaceSearchController extends GetxController {
   PlaceSearchController(this._placeRepository, this._roadRepository);
 
-  static PlaceSearchController get instance => Get.find<PlaceSearchController>();
-
   final PlaceRepository _placeRepository;
   final RoadRepository _roadRepository;
 
-  final RxString query = ''.obs;
+  String _query = '';
   final RxList<MapMarkerItem> places = <MapMarkerItem>[].obs;
   final RxList<MapMarkerItem> roads = <MapMarkerItem>[].obs;
 
@@ -36,10 +34,10 @@ class PlaceSearchController extends GetxController {
   Future<void> search(String value) => Diag.frequentFuture(
     'PlaceSearchController.search',
     () async {
-      query.value = value;
+      _query = value;
       final results = await Future.wait([_placeRepository.search(value), _roadRepository.search(value)]);
-      if (isClosed || query.value != value) {
-        Diag.event('PlaceSearchController.search.early', 'stale closed=$isClosed query="${query.value}"');
+      if (isClosed || _query != value) {
+        Diag.event('PlaceSearchController.search.early', 'stale closed=$isClosed query="$_query"');
         return;
       }
       places.assignAll(results.first);

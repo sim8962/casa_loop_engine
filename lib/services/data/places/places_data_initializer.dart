@@ -36,22 +36,14 @@ class PlacesDataInitializer {
   );
 
   /// Importe le dataset depuis l'asset s'il n'est pas déjà à jour.
-  ///
-  /// [assetJson] est réservé aux tests ; en production la méthode lit
-  /// automatiquement `rootBundle`.
-  Future<PlacesImportResult> initialize({String? assetJson}) => Diag.future(
-    'PlacesDataInitializer.initialize',
-    () async {
-      if (isCurrentVersionInStore()) {
-        Diag.event('PlacesDataInitializer.initialize.upToDate');
-        return const PlacesImportResult(importedCount: 0, dataVersion: _dataVersion);
-      }
+  Future<void> initialize() => Diag.future('PlacesDataInitializer.initialize', () async {
+    if (isCurrentVersionInStore()) {
+      Diag.event('PlacesDataInitializer.initialize.upToDate');
+      return;
+    }
 
-      final jsonString = assetJson ?? await rootBundle.loadString(_assetPath);
-      final service = PlacesImportService(_placeBox);
-      return service.importFromString(jsonString, dataVersion: _dataVersion);
-    },
-    params: 'asset=$_assetPath injectedJson=${assetJson != null}',
-    result: (r) => 'imported=${r.importedCount} version=${r.dataVersion}',
-  );
+    final jsonString = await rootBundle.loadString(_assetPath);
+    final service = PlacesImportService(_placeBox);
+    await service.importFromString(jsonString, dataVersion: _dataVersion);
+  }, params: 'asset=$_assetPath');
 }
